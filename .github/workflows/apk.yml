@@ -11,4 +11,21 @@ jobs:
         with: { distribution: temurin, java-version: 17 }
       - run: npm install
       - run: npx cap add android
-      - run: sed -i 's#</manifest>#<uses-permission android:name="android.permission.CAMERA"/><queries><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries>
+      - name: Patch manifest
+        run: |
+          python3 - <<'PY'
+          p='android/app/src/main/AndroidManifest.xml'
+          s=open(p).read()
+          L=chr(60)
+          add=(L+'uses-permission android:name="android.permission.CAMERA"/>'
+               +L+'queries>'+L+'intent>'+L+'action android:name="android.intent.action.TTS_SERVICE"/>'+L+'/intent>'+L+'/queries>')
+          s=s.replace(L+'/manifest>',add+L+'/manifest>')
+          assert 'TTS_SERVICE' in s
+          open(p,'w').write(s)
+          PY
+      - run: npx cap sync android
+      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: absen-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
