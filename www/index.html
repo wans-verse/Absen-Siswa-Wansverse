@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Absen Wajah</title>
+<style>
+:root{--bg:#f2f2f7;--card:#fff;--tx:#000;--tx2:#8e8e93;--sep:#c6c6c8;--blue:#007aff;--green:#34c759;--red:#ff3b30;--org:#ff9500;--seg:#7676801f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--card:#1c1c1e;--tx:#fff;--tx2:#98989f;--sep:#38383a;--blue:#0a84ff;--green:#30d158;--red:#ff453a;--org:#ff9f0a;--seg:#7676803d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#000;--card:#1c1c1e;--tx:#fff;--tx2:#98989f;--sep:#38383a;--blue:#0a84ff;--green:#30d158;--red:#ff453a;--org:#ff9f0a;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--tx);font:16px -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif}
+#app{max-width:520px;margin:0 auto;height:100%;display:flex;flex-direction:column}
+main{flex:1;overflow-y:auto;padding:12px 16px 24px}
+h1{font-size:32px;margin:8px 0 12px;letter-spacing:-.5px}
+h3{font-size:13px;color:var(--tx2);text-transform:uppercase;font-weight:500;margin:18px 12px 6px}
+.card{background:var(--card);border-radius:12px;overflow:hidden}
+.row{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:.5px solid var(--sep)}
+.row:last-child{border:0}.row .g{flex:1;min-width:0}.row small{color:var(--tx2);display:block;font-size:13px}
+.seg{display:flex;background:var(--seg);border-radius:9px;padding:2px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:none;color:var(--tx);padding:7px;border-radius:7px;font-size:14px;font-weight:500}
+.seg button.on{background:var(--card);box-shadow:0 1px 4px #0002}
+.btn{border:0;background:var(--blue);color:#fff;border-radius:12px;padding:14px;font-size:17px;font-weight:600;width:100%}
+.btn.s{background:var(--seg);color:var(--blue)}.btn.r{background:var(--red)}
+.btns{display:flex;gap:8px;margin:10px 0}
+nav{display:flex;border-top:.5px solid var(--sep);background:var(--card);padding-bottom:4px}
+nav button{flex:1;border:0;background:none;color:var(--tx2);padding:8px 0 4px;font-size:11px}
+nav button svg{display:block;margin:0 auto 3px}nav button.on{color:var(--blue)}
+input,select{width:100%;font-size:16px;padding:11px 12px;border-radius:10px;border:0;background:var(--card);color:var(--tx);margin-bottom:8px}
+.cam{position:relative;background:#000;border-radius:16px;overflow:hidden;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;color:#aaa;text-align:center}
+.cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.ring{position:absolute;width:58%;aspect-ratio:3/4;border:3px solid #fff9;border-radius:50%}
+.pill{font-size:12px;padding:3px 9px;border-radius:99px;color:#fff;font-weight:600}
+.H{background:var(--green)}.I{background:var(--blue)}.S{background:var(--org)}.A{background:var(--red)}
+header{display:flex;justify-content:flex-end;gap:8px;padding:8px 16px 0}header button{width:36px;height:36px;border-radius:50%;border:0;background:var(--card);color:var(--blue);display:flex;align-items:center;justify-content:center}
+.toast{position:fixed;left:16px;right:16px;top:calc(env(safe-area-inset-top,0px) + 10px);max-width:488px;margin:auto;background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:0 8px 30px #0004;z-index:9;display:none}
+.chips{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}
+.chips button{border:0;border-radius:99px;padding:7px 14px;background:var(--card);color:var(--tx);white-space:nowrap;font-size:14px}
+.chips button.on{background:var(--blue);color:#fff}
+.back{color:var(--blue);border:0;background:none;font-size:17px;padding:4px 0}
+.sm{font-size:13px;color:var(--tx2);padding:0 12px}
+select.st{width:auto;margin:0;padding:6px;font-size:13px}
+</style></head><body>
+<div id="app"><header><button id="snd" aria-label="Suara"></button><button id="thm" aria-label="Tema"></button></header><main id="v"></main>
+<nav><button data-t="absen"><svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 10v1M15 10v1M9.5 15c1.5 1.3 3.5 1.3 5 0"/></svg>Absen</button><button data-t="siswa"><svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4.5 2 4.5 4.5"/></svg>Siswa</button><button data-t="rekap"><svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Rekap</button></nav></div>
+<div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+const today=()=>new Date().toISOString().slice(0,10);
+const jam=()=>new Date().toTimeString().slice(0,5);
+const ST={H:'Hadir',I:'Izin',S:'Sakit',A:'Alpa'};
+let DB={students:[],att:[]};
+try{DB=JSON.parse(localStorage.getItem('absen')||'null')||DB}catch(e){}
+if(!DB.students.length){
+ const n=['Aisyah','Budi','Citra','Dimas','Eka','Fajar'],c=['X IPA 1','X IPA 2','XI IPS 1'];
+ c.forEach((k,i)=>n.forEach((x,j)=>DB.students.push({id:'s'+i+j,nis:'2024'+i+'0'+j,name:x+' '+['Pratama','Sari','Wijaya'][i],cls:k,vec:null})));
+}
+const save=()=>{try{localStorage.setItem('absen',JSON.stringify(DB))}catch(e){}};
+const classes=()=>[...new Set(DB.students.map(s=>s.cls))].sort();
+let S={tab:'absen',mode:'kelas',cls:null,stream:null,rc:'all',rd:'today'};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function toast(h,ms=2800){const t=$('#toast');t.innerHTML=h;t.style.display='block';clearTimeout(toast.i);toast.i=setTimeout(()=>t.style.display='none',ms)}
+function stopCam(){if(S.stream){S.stream.getTracks().forEach(t=>t.stop());S.stream=null}}
+function render(){
+ if(S.tab!=='absen'||!(S.mode==='sekolah'||S.cls))stopCam();
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
+ ({absen:vAbsen,siswa:vSiswa,rekap:vRekap})[S.tab]();
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;render()});
+
+/* ---------- Tema & Suara ---------- */
+const IC=d=>'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
+const SUN=IC('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>');
+const MOON=IC('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>');
+const SPK=IC('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/>');
+const MUTE=IC('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9l5 6M21 9l-5 6"/>');
+let THM='',SND=true;
+try{THM=localStorage.getItem('thm')||'';SND=localStorage.getItem('snd')!=='0'}catch(e){}
+if(!THM)THM=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+function hdr(){document.documentElement.dataset.theme=THM;$('#thm').innerHTML=THM==='dark'?SUN:MOON;$('#snd').innerHTML=SND?SPK:MUTE;try{localStorage.setItem('thm',THM);localStorage.setItem('snd',SND?'1':'0')}catch(e){}}
+$('#thm').onclick=()=>{THM=THM==='dark'?'light':'dark';hdr()};
+$('#snd').onclick=()=>{SND=!SND;hdr();if(SND)speak('Suara aktif');else if(window.speechSynthesis)speechSynthesis.cancel()};
+let VOICE=null;
+function pickVoice(){const v=speechSynthesis.getVoices();VOICE=v.find(x=>/^id[-_]ID/i.test(x.lang)&&/google/i.test(x.name))||v.find(x=>/^id/i.test(x.lang))||null}
+if('speechSynthesis' in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+function speak(t){if(!SND||!('speechSynthesis' in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='id-ID';if(VOICE)u.voice=VOICE;speechSynthesis.speak(u)}catch(e){}}
+
+/* ---------- Face matching (on-device, ringan) ---------- */
+function vecFrom(src){
+ const c=document.createElement('canvas');c.width=c.height=16;const x=c.getContext('2d');
+ const w=src.videoWidth,h=src.videoHeight,s=Math.min(w,h)*.6;
+ x.drawImage(src,(w-s)/2,(h-s)/2-h*.03,s,s,0,0,16,16);
+ const d=x.getImageData(0,0,16,16).data,v=[];let m=0;
+ for(let i=0;i<d.length;i+=4){const g=.3*d[i]+.59*d[i+1]+.11*d[i+2];v.push(g);m+=g}
+ m/=v.length;let n=0;v.forEach((g,i)=>{v[i]=g-m;n+=v[i]*v[i]});n=Math.sqrt(n)||1;
+ return v.map(g=>+(g/n).toFixed(4));
+}
+const cos=(a,b)=>a.reduce((s,x,i)=>s+x*b[i],0);
+function match(v,pool){
+ let best=null,sc=-1,second=-1;
+ pool.filter(s=>s.vec).forEach(s=>{const c=cos(v,s.vec);if(c>sc){second=sc;sc=c;best=s}else if(c>second)second=c});
+ return{best,sc,second};
+}
+const TH=()=>S.mode==='kelas'?0.80:0.88;  // sekolah: ambang lebih ketat (kandidat banyak)
+
+function mark(s,status='H',via='wajah'){
+ const d=today();let a=DB.att.find(x=>x.sid===s.id&&x.date===d);
+ const dup=a&&a.st==='H'&&status==='H';
+ if(a){if(!dup){a.st=status;a.time=jam();a.via=via}}
+ else DB.att.push({sid:s.id,date:d,time:jam(),st:status,via});
+ save();return dup;
+}
+async function startCam(){
+ try{S.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
+  const v=$('#vid');v.srcObject=S.stream;v.style.display='block';$('#camMsg').style.display='none'}
+ catch(e){$('#camMsg').textContent='Kamera tidak tersedia / izin ditolak. Gunakan Simulasi atau absen manual.'}
+}
+function pool(){return S.mode==='kelas'?DB.students.filter(s=>s.cls===S.cls):DB.students}
+function scan(){
+ const v=$('#vid');if(!S.stream||!v.videoWidth)return toast('Kamera belum aktif');
+ const p=pool();if(!p.some(s=>s.vec))return toast('Belum ada wajah terdaftar di '+(S.mode==='kelas'?S.cls:'sekolah')+'. Daftarkan di tab Siswa.');
+ const r=match(vecFrom(v),p);
+ if(r.best&&r.sc>=TH()&&r.sc-r.second>=0.02){
+  const dup=mark(r.best);
+  toast(`<b>${dup?'Sudah absen':'Hadir'}</b><br>${esc(r.best.name)} · ${esc(r.best.cls)}<br><small style="color:var(--tx2)">Kecocokan ${(r.sc*100).toFixed(0)}% · ${p.length} kandidat</small>`);
+  speak(r.best.name+(dup?', sudah absen':', hadir'));list();
+ }else{speak('Wajah tidak dikenali');toast(`<b>Wajah tidak dikenali</b><br><small style="color:var(--tx2)">Skor tertinggi ${(Math.max(r.sc,0)*100).toFixed(0)}% (min ${(TH()*100).toFixed(0)}%). Coba lagi / absen manual.</small>`)}
+}
+function sim(){
+ const p=pool().filter(s=>!DB.att.some(a=>a.sid===s.id&&a.date===today()));
+ if(!p.length)return toast('Semua sudah absen');
+ const s=p[Math.random()*p.length|0];mark(s,'H','simulasi');
+ speak(s.name+', hadir');toast(`<b>Hadir (simulasi)</b><br>${esc(s.name)} · ${esc(s.cls)}`);list();
+}
+
+/* ---------- Absen ---------- */
+function vAbsen(){
+ const v=$('#v');
+ let h=`<h1>Absen</h1><div class="seg"><button data-m="kelas" class="${S.mode==='kelas'?'on':''}">Mode Kelas</button><button data-m="sekolah" class="${S.mode==='sekolah'?'on':''}">Mode Sekolah</button></div>`;
+ if(S.mode==='kelas'&&!S.cls){
+  h+=`<h3>Pilih kelas</h3><div class="card">${classes().map(c=>{const n=DB.students.filter(s=>s.cls===c).length;return`<div class="row" data-c="${esc(c)}"><div class="g">${esc(c)}<small>${n} siswa</small></div><span style="color:var(--tx2)">›</span></div>`}).join('')}</div>
+  <p class="sm">Wajah hanya dicocokkan dengan siswa di kelas terpilih — lebih cepat & akurat.</p>`;
+  v.innerHTML=h;
+  v.querySelectorAll('[data-c]').forEach(e=>e.onclick=()=>{S.cls=e.dataset.c;render()});
+ }else{
+  if(S.mode==='kelas')h+=`<button class="back" id="bk">‹ ${esc(S.cls)}</button>`;
+  else h+=`<p class="sm">Cocok untuk gerbang — wajah dicocokkan ke ${DB.students.length} siswa, kelas terbaca otomatis.</p>`;
+  h+=`<div class="cam"><video id="vid" autoplay playsinline muted style="display:none"></video><div class="ring"></div><div id="camMsg" style="padding:20px">Menyalakan kamera…</div></div>
+  <div class="btns"><button class="btn" id="sc">Scan Wajah</button><button class="btn s" id="sm" style="width:40%">Simulasi</button></div>
+  <h3>Hari ini · ${S.mode==='kelas'?esc(S.cls):'Seluruh sekolah'}</h3><div class="card" id="lst"></div>`;
+  v.innerHTML=h;
+  if($('#bk'))$('#bk').onclick=()=>{S.cls=null;render()};
+  $('#sc').onclick=scan;$('#sm').onclick=sim;startCam();list();
+ }
+ v.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{S.mode=b.dataset.m;stopCam();render()});
+}
+function list(){
+ const el=$('#lst');if(!el)return;const d=today();
+ const p=pool();
+ el.innerHTML=p.map(s=>{const a=DB.att.find(x=>x.sid===s.id&&x.date===d);
+  return`<div class="row"><div class="g">${esc(s.name)}<small>${S.mode==='sekolah'?esc(s.cls)+' · ':''}${a?a.time+' · '+a.via:'Belum absen'}</small></div>
+  <select class="st" data-s="${s.id}"><option value="">—</option>${Object.entries(ST).map(([k,l])=>`<option value="${k}" ${a&&a.st===k?'selected':''}>${l}</option>`).join('')}</select></div>`}).join('');
+ el.querySelectorAll('select').forEach(sel=>sel.onchange=()=>{
+  const s=DB.students.find(x=>x.id===sel.dataset.s);
+  if(!sel.value){DB.att=DB.att.filter(a=>!(a.sid===s.id&&a.date===today()));save();}else{const a=DB.att.find(x=>x.sid===s.id&&x.date===today());if(a){a.st=sel.value;a.via='manual';a.time=jam();save()}else mark(s,sel.value,'manual')}
+  list()});
+}
+
+/* ---------- Siswa ---------- */
+let enrollId=null;
+function vSiswa(){
+ const v=$('#v');
+ if(enrollId){
+  const s=DB.students.find(x=>x.id===enrollId);
+  v.innerHTML=`<button class="back" id="bk">‹ Siswa</button><h1 style="font-size:26px">Daftarkan wajah</h1><p class="sm">${esc(s.name)} · ${esc(s.cls)}<br>Ambil 3 sampel (lurus, sedikit kiri, sedikit kanan) untuk akurasi lebih baik.</p>
+  <div class="cam"><video id="vid" autoplay playsinline muted style="display:none"></video><div class="ring"></div><div id="camMsg" style="padding:20px">Menyalakan kamera…</div></div>
+  <div class="btns"><button class="btn" id="cap">Ambil sampel (${(s.samples||[]).length}/3)</button></div>`;
+  startCam();$('#bk').onclick=()=>{stopCam();enrollId=null;vSiswa()};
+  $('#cap').onclick=()=>{const vd=$('#vid');if(!S.stream||!vd.videoWidth)return toast('Kamera belum aktif');
+   s.samples=s.samples||[];s.samples.push(vecFrom(vd));
+   if(s.samples.length>=3){const L=s.samples[0].length;s.vec=Array.from({length:L},(_,i)=>s.samples.reduce((a,x)=>a+x[i],0)/3);
+    const n=Math.sqrt(s.vec.reduce((a,x)=>a+x*x,0))||1;s.vec=s.vec.map(x=>x/n);s.samples=[];save();stopCam();toast('Wajah '+esc(s.name)+' terdaftar');enrollId=null;vSiswa()}
+   else{save();$('#cap').textContent=`Ambil sampel (${s.samples.length}/3)`}};
+  return;
+ }
+ const cl=classes();
+ v.innerHTML=`<h1>Siswa</h1><div class="card" style="padding:12px;background:none"><input id="nm" placeholder="Nama siswa"><input id="ni" placeholder="NIS" inputmode="numeric"><input id="kl" list="kls" placeholder="Kelas (mis. X IPA 1)"><datalist id="kls">${cl.map(c=>`<option>${esc(c)}`).join('')}</datalist><button class="btn" id="add">Tambah siswa</button></div>
+  ${cl.map(c=>`<h3>${esc(c)}</h3><div class="card">${DB.students.filter(s=>s.cls===c).map(s=>`<div class="row"><div class="g">${esc(s.name)}<small>NIS ${esc(s.nis)} · ${s.vec?'<span style="color:var(--green)">Wajah terdaftar</span>':'Belum ada wajah'}</small></div><button class="pill I" style="border:0" data-e="${s.id}">${s.vec?'Ulang':'Daftar'}</button><button class="pill A" style="border:0" data-d="${s.id}">Hapus</button></div>`).join('')}</div>`).join('')}`;
+ $('#add').onclick=()=>{const n=$('#nm').value.trim(),i=$('#ni').value.trim(),k=$('#kl').value.trim();
+  if(!n||!k)return toast('Nama & kelas wajib diisi');
+  if(i&&DB.students.some(s=>s.nis===i))return toast('NIS sudah dipakai');
+  DB.students.push({id:'s'+Date.now(),nis:i||'-',name:n,cls:k,vec:null});save();vSiswa()};
+ v.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{enrollId=b.dataset.e;const s=DB.students.find(x=>x.id===enrollId);s.samples=[];vSiswa()});
+ v.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{if(confirm('Hapus siswa & riwayat absennya?')){DB.students=DB.students.filter(s=>s.id!==b.dataset.d);DB.att=DB.att.filter(a=>a.sid!==b.dataset.d);save();vSiswa()}});
+}
+
+/* ---------- Rekap ---------- */
+function rows(){
+ const d=today();let ss=DB.students.filter(s=>S.rc==='all'||s.cls===S.rc);const out=[];
+ if(S.rd==='today'){ss.forEach(s=>{const a=DB.att.find(x=>x.sid===s.id&&x.date===d);out.push({s,date:d,time:a?a.time:'',st:a?a.st:'A',via:a?a.via:'belum absen'})})}
+ else DB.att.forEach(a=>{const s=ss.find(x=>x.id===a.sid);if(s)out.push({s,date:a.date,time:a.time,st:a.st,via:a.via})});
+ return out.sort((a,b)=>b.date.localeCompare(a.date)||a.s.cls.localeCompare(b.s.cls)||a.s.name.localeCompare(b.s.name));
+}
+function vRekap(){
+ const R=rows(),c={H:0,I:0,S:0,A:0};R.forEach(r=>c[r.st]++);
+ $('#v').innerHTML=`<h1>Rekap</h1>
+ <div class="chips">${['all',...classes()].map(k=>`<button data-k="${esc(k)}" class="${S.rc===k?'on':''}">${k==='all'?'Seluruh sekolah':esc(k)}</button>`).join('')}</div>
+ <div class="seg"><button data-r="today" class="${S.rd==='today'?'on':''}">Hari ini</button><button data-r="all" class="${S.rd==='all'?'on':''}">Semua hari</button></div>
+ <div class="card"><div class="row" style="justify-content:space-around;text-align:center">${Object.entries(ST).map(([k,l])=>`<div><b style="font-size:22px">${c[k]}</b><small>${l}</small></div>`).join('')}</div></div>
+ <div class="btns"><button class="btn s" id="cp">Salin (Excel)</button><button class="btn" id="dl">Unduh .csv</button></div>
+ <div class="card" style="margin-top:12px">${R.slice(0,200).map(r=>`<div class="row"><div class="g">${esc(r.s.name)}<small>${esc(r.s.cls)} · ${r.date}${r.time?' '+r.time:''}</small></div><span class="pill ${r.st}">${ST[r.st]}</span></div>`).join('')||'<div class="row">Belum ada data</div>'}</div>`;
+ $('#v').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{S.rc=b.dataset.k;vRekap()});
+ $('#v').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{S.rd=b.dataset.r;vRekap()});
+ const csv=()=>'Tanggal,Jam,NIS,Nama,Kelas,Status,Metode\n'+R.map(r=>[r.date,r.time,r.s.nis,r.s.name,r.s.cls,ST[r.st],r.via].map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
+ $('#cp').onclick=async()=>{try{await navigator.clipboard.writeText(csv().replace(/,/g,'\t').replace(/"/g,''));toast('Tersalin — tempel ke Excel')}catch(e){toast('Gagal menyalin')}};
+ $('#dl').onclick=()=>{try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv()],{type:'text/csv'}));a.download='rekap-absen-'+(S.rc==='all'?'sekolah':S.rc)+'.csv';a.click()}catch(e){toast('Unduh tidak tersedia, gunakan Salin')}};
+}
+hdr();render();
+</script></body></html>
