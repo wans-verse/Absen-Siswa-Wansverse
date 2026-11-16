@@ -32,6 +32,21 @@ input[type=range]{padding:0;background:none!important;margin:4px 0 0;accent-colo
 .cam{position:relative;background:#000;border-radius:16px;overflow:hidden;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;color:#aaa;text-align:center}
 .cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
 .ring{position:absolute;width:58%;aspect-ratio:3/4;border:3px solid #fff9;border-radius:50%}
+.scanline{position:absolute;left:21%;width:58%;height:3px;top:21%;border-radius:3px;background:var(--blue);box-shadow:0 0 14px 3px var(--blue);display:none;pointer-events:none}
+.cam.busy .scanline{display:block;animation:sl .6s ease-in-out infinite alternate}
+@keyframes sl{from{top:21%}to{top:79%}}
+.ring{transition:border-color .15s,box-shadow .15s}
+.cam.busy .ring{border-color:var(--blue)}
+.cam.ok .ring{border-color:var(--green);box-shadow:0 0 24px var(--green)}
+.cam.no .ring{border-color:var(--red);box-shadow:0 0 24px var(--red)}
+.cam.dup .ring{border-color:var(--org);box-shadow:0 0 24px var(--org)}
+.flash{position:absolute;inset:0;opacity:0;pointer-events:none}
+.cam.ok .flash{background:var(--green)}.cam.no .flash{background:var(--red)}.cam.dup .flash{background:var(--org)}
+.cam.fl .flash{animation:fl .4s ease-out}
+@keyframes fl{from{opacity:.55}to{opacity:0}}
+.std{position:absolute;bottom:-6px;width:2px;height:10px;background:var(--tx2);border-radius:1px;pointer-events:none}
+.lim{flex-basis:100%;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--tx2);margin-top:10px}
+.lim button{border:0;background:none;color:var(--blue);font-size:12px;padding:0}
 .pill{font-size:12px;padding:3px 9px;border-radius:99px;color:#fff;font-weight:600}
 .H{background:var(--green)}.I{background:var(--blue)}.S{background:var(--org)}.A{background:var(--red)}
 .toast{position:fixed;left:16px;right:16px;top:calc(env(safe-area-inset-top,0px) + 10px);max-width:488px;margin:auto;background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:0 8px 30px #0004;z-index:9;display:none}
@@ -74,9 +89,11 @@ const ST={H:'Hadir',I:'Izin',S:'Sakit',A:'Alpa'};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* ---------- Data ---------- */
-const DEF={theme:'auto',accent:'',thK:80,thS:88,
+const DEF={theme:'auto',accent:'',thK:80,thS:88,detect:true,auto:false,cool:3,gap:2,
  snd:{on:true,voice:'',rate:1,pitch:1,vol:1,hadir:true,dup:true,gagal:true,
   tHadir:'{nama}, hadir',tDup:'{nama}, sudah absen',tGagal:'Wajah tidak dikenali'}};
+// [min, maks, standar]
+const LIM={thK:[65,95,80],thS:[70,95,88],gap:[0,5,2]};
 function norm(o){
  o=o&&typeof o==='object'?o:{};
  const d={students:Array.isArray(o.students)?o.students:[],att:Array.isArray(o.att)?o.att:[],classes:Array.isArray(o.classes)?o.classes:[],set:o.set||{}};
@@ -86,6 +103,7 @@ function norm(o){
  d.att=d.att.filter(a=>!demo.has(a.sid)&&a.via!=='simulasi');
  d.students.forEach(s=>{if(s.cls&&!d.classes.includes(s.cls))d.classes.push(s.cls)});
  d.set=Object.assign({},DEF,d.set,{snd:Object.assign({},DEF.snd,d.set.snd)});
+ Object.keys(LIM).forEach(k=>{const v=+d.set[k];d.set[k]=isNaN(v)?LIM[k][2]:Math.min(LIM[k][1],Math.max(LIM[k][0],v))});
  return d;
 }
 const save=()=>{try{localStorage.setItem('absen',JSON.stringify(DB))}catch(e){}};
@@ -102,7 +120,7 @@ let enrollId=null;
 let S={tab:'absen',mode:'kelas',cls:null,stream:null,rc:'all',rd:'today',sc:'all',sf:'all',sq:'',addOpen:false,addCls:''};
 
 function toast(h,ms=2800){const t=$('#toast');t.innerHTML=h;t.style.display='block';clearTimeout(toast.i);toast.i=setTimeout(()=>t.style.display='none',ms)}
-function stopCam(){if(S.stream){S.stream.getTracks().forEach(t=>t.stop());S.stream=null}}
+function stopCam(){clearInterval(autoT);autoT=null;busy=false;if(S.stream){S.stream.getTracks().forEach(t=>t.stop());S.stream=null}}
 function render(){
  if(S.tab!=='absen'||!(S.mode==='sekolah'||S.cls))if(!(S.tab==='siswa'&&enrollId))stopCam();
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
@@ -174,19 +192,91 @@ async function startCam(){
  catch(e){const m=$('#camMsg');if(m)m.textContent='Kamera tidak tersedia / izin ditolak. Gunakan absen manual di daftar bawah.'}
 }
 function pool(){return S.mode==='kelas'?DB.students.filter(s=>s.cls===S.cls):DB.students}
-function scan(){
- const v=$('#vid');if(!S.stream||!v.videoWidth)return toast('Kamera belum aktif');
- const p=pool();if(!p.some(s=>s.vec))return toast('Belum ada wajah terdaftar di '+(S.mode==='kelas'?esc(S.cls):'sekolah')+'. Daftarkan di tab Siswa.');
- const r=match(vecFrom(v),p),n=cf().snd;
- if(r.best&&r.sc>=TH()&&r.sc-r.second>=0.02){
-  const dup=mark(r.best);
-  toast(`<b>${dup?'Sudah absen':'Hadir'}</b><br>${esc(r.best.name)} · ${esc(r.best.cls)}<br><small style="color:var(--tx2)">Kecocokan ${(r.sc*100).toFixed(0)}% · ${p.length} kandidat</small>`);
-  if(dup){if(n.dup)speak(fill(n.tDup,r.best))}else if(n.hadir)speak(fill(n.tHadir,r.best));
-  list();
- }else{
-  if(n.gagal)speak(n.tGagal);
-  toast(`<b>Wajah tidak dikenali</b><br><small style="color:var(--tx2)">Skor tertinggi ${(Math.max(r.sc,0)*100).toFixed(0)}% (min ${(TH()*100).toFixed(0)}%). Coba lagi / absen manual.</small>`);
+/* ---------- Deteksi wajah, efek & scan otomatis ---------- */
+let busy=false,coolUntil=0,needLeave=false,leaveMax=0,autoT=null,fd=null,noFD=false;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function buzz(k){try{navigator.vibrate&&navigator.vibrate(k==='ok'?60:k==='dup'?[40,60,40]:[120,60,120])}catch(e){}}
+function fx(k){
+ const c=$('.cam');if(!c)return;
+ c.classList.remove('busy','ok','no','dup','fl');void c.offsetWidth;
+ if(k==='busy'){c.classList.add('busy');return}
+ c.classList.add(k,'fl');buzz(k);
+ clearTimeout(fx.t);fx.t=setTimeout(()=>c.classList.remove('ok','no','dup','fl'),1400);
+}
+// perkiraan: ada kulit + tekstur di dalam cincin (cadangan bila FaceDetector bawaan tidak ada)
+function skinFace(v){
+ const w=v.videoWidth,h=v.videoHeight,vw=w/h>.75?h*.75:w,vh=w/h>.75?h:w/.75;
+ const rw=.58*vw,rh=.58*vh,W=24,H=32;
+ const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});
+ x.drawImage(v,(w-rw)/2,(h-rh)/2,rw,rh,0,0,W,H);
+ const d=x.getImageData(0,0,W,H).data;let n=0,sk=0,sum=0,sq=0;
+ for(let yy=0;yy<H;yy++)for(let xx=0;xx<W;xx++){
+  if(((xx-W/2+.5)/(W/2))**2+((yy-H/2+.5)/(H/2))**2>1)continue;
+  const k=(yy*W+xx)*4,r=d[k],g=d[k+1],b=d[k+2];
+  const Y=.299*r+.587*g+.114*b,Cb=128-.169*r-.331*g+.5*b,Cr=128+.5*r-.419*g-.081*b;
+  n++;sum+=Y;sq+=Y*Y;
+  if(Y>35&&Cb>=77&&Cb<=127&&Cr>=133&&Cr<=173)sk++;
  }
+ const m=sum/n,sd=Math.sqrt(Math.max(0,sq/n-m*m));
+ return sk/n>=.25&&sd>=14;
+}
+async function hasFace(v){
+ if(!cf().detect)return true;
+ if('FaceDetector' in window&&!noFD){
+  try{fd=fd||new FaceDetector({fastMode:true,maxDetectedFaces:1});
+   const f=await fd.detect(v);if(!f.length)return false;
+   const b=f[0].boundingBox,w=v.videoWidth,h=v.videoHeight;
+   return Math.abs(b.x+b.width/2-w/2)<w*.25&&Math.abs(b.y+b.height/2-h/2)<h*.3&&b.width>Math.min(w,h)*.15;
+  }catch(e){noFD=true;fd=null}
+ }
+ return skinFace(v);
+}
+async function scan(auto){
+ if(busy)return;
+ const v=$('#vid');
+ if(!S.stream||!v||!v.videoWidth)return auto?0:toast('Kamera belum aktif');
+ const p=pool();
+ if(!p.some(s=>s.vec))return auto?0:toast('Belum ada wajah terdaftar di '+(S.mode==='kelas'?esc(S.cls):'sekolah')+'. Daftarkan di tab Siswa.');
+ busy=true;
+ try{
+  if(!(await hasFace(v))){
+   needLeave=false;
+   if(!auto){fx('no');toast('<b>Wajah tidak terdeteksi</b><br><small style="color:var(--tx2)">Arahkan wajah ke dalam cincin, lalu coba lagi.</small>')}
+   return;
+  }
+  fx('busy');await sleep(auto?450:650);
+  if(!$('#vid'))return;
+  const r=match(vecFrom(v),p),n=cf().snd,cd=cf().cool*1000;
+  const gapOK=r.second<0||r.sc-r.second>=cf().gap/100;
+  if(r.best&&r.sc>=TH()&&gapOK){
+   const dup=mark(r.best);
+   fx(dup?'dup':'ok');
+   toast(`<b>${dup?'Sudah absen':'Hadir'}</b><br>${esc(r.best.name)} · ${esc(r.best.cls)}<br><small style="color:var(--tx2)">Kecocokan ${(r.sc*100).toFixed(0)}% · ${p.length} kandidat</small>`);
+   if(dup){if(n.dup)speak(fill(n.tDup,r.best))}else if(n.hadir)speak(fill(n.tHadir,r.best));
+   list();coolUntil=Date.now()+cd;needLeave=true;leaveMax=Date.now()+cd*3;
+  }else{
+   fx('no');
+   if(!auto&&n.gagal)speak(n.tGagal);
+   toast(r.best&&r.sc>=TH()
+    ?`<b>Terlalu mirip siswa lain</b><br><small style="color:var(--tx2)">Skor ${(r.sc*100).toFixed(0)}% tapi selisih dengan kandidat kedua hanya ${((r.sc-r.second)*100).toFixed(1)}% (min ${cf().gap}%). Atur di Setting → Pencocokan wajah.</small>`
+    :`<b>Wajah tidak dikenali</b><br><small style="color:var(--tx2)">Skor tertinggi ${(Math.max(r.sc,0)*100).toFixed(0)}% (min ${(TH()*100).toFixed(0)}%). Coba lagi / absen manual.</small>`);
+   coolUntil=Date.now()+(auto?1500:0);
+  }
+ }finally{busy=false}
+}
+function autoLoop(){
+ clearInterval(autoT);autoT=null;
+ if(!cf().auto||S.tab!=='absen')return;
+ autoT=setInterval(async()=>{
+  if(busy||!S.stream||Date.now()<coolUntil)return;
+  const v=$('#vid');if(!v||!v.videoWidth)return;
+  if(needLeave){
+   busy=true;let f=false;try{f=cf().detect&&await hasFace(v)}catch(e){}busy=false;
+   if(f&&Date.now()<leaveMax)return;
+   needLeave=false;
+  }
+  scan(true);
+ },700);
 }
 
 /* ---------- Absen ---------- */
@@ -208,12 +298,16 @@ function vAbsen(){
  }else{
   if(S.mode==='kelas')h+=`<button class="back" id="bk">‹ ${esc(S.cls)}</button>`;
   else h+=`<p class="sm">Cocok untuk gerbang — wajah dicocokkan ke ${DB.students.length} siswa, kelas terbaca otomatis.</p>`;
-  h+=`<div class="cam"><video id="vid" autoplay playsinline muted style="display:none"></video><div class="ring"></div><div id="camMsg" style="padding:20px">Menyalakan kamera…</div></div>
+  h+=`<div class="cam"><video id="vid" autoplay playsinline muted style="display:none"></video><div class="ring"></div><div class="scanline"></div><div class="flash"></div><div id="camMsg" style="padding:20px">Menyalakan kamera…</div></div>
   <div class="btns"><button class="btn" id="sc">Scan Wajah</button></div>
+  <div class="card"><div class="row"><div class="g">Scan otomatis<small id="auS"></small></div>${sw('au',cf().auto)}</div></div>
   <h3>Hari ini · ${S.mode==='kelas'?esc(S.cls):'Seluruh sekolah'}</h3><div class="card" id="lst"></div>`;
   v.innerHTML=h;
   if($('#bk'))$('#bk').onclick=()=>{S.cls=null;stopCam();render()};
-  $('#sc').onclick=scan;startCam();list();
+  $('#sc').onclick=()=>scan(false);
+  const auS=()=>$('#auS').textContent=cf().auto?`Aktif · jeda ${cf().cool} dtk setelah berhasil`:'Mati · tekan tombol Scan Wajah';
+  auS();$('#au').onchange=e=>{cf().auto=e.target.checked;save();needLeave=false;coolUntil=0;auS();autoLoop()};
+  needLeave=false;coolUntil=0;startCam().then(autoLoop);list();
  }
  v.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{S.mode=b.dataset.m;stopCam();render()});
 }
@@ -339,7 +433,7 @@ function vRekap(){
 
 /* ---------- Setting ---------- */
 const ACC=[['','#007aff'],['#34c759','#34c759'],['#af52de','#af52de'],['#ff9500','#ff9500'],['#ff2d55','#ff2d55']];
-const FMT={x:v=>(+v).toFixed(2).replace(/0$/,'')+'×',p:v=>Math.round(v*100)+'%',n:v=>v+'%'};
+const FMT={s:v=>v+' dtk',x:v=>(+v).toFixed(2).replace(/0$/,'')+'×',p:v=>Math.round(v*100)+'%',n:v=>v+'%'};
 function rng(id,label,min,max,step,val,f){
  return`<div class="row c"><div class="g">${label}</div><b id="${id}v">${FMT[f](val)}</b><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"></div>`;
 }
@@ -347,6 +441,16 @@ function bindR(id,f,set){
  const e=$('#'+id);
  e.oninput=()=>{$('#'+id+'v').textContent=FMT[f](+e.value)};
  e.onchange=()=>{set(+e.value);save()};
+}
+function rngS(id,label,key,hint){
+ const [mn,mx,df]=LIM[key],val=cf()[key],pos=(df-mn)/(mx-mn)*100;
+ return`<div class="row c"><div class="g">${label}<small>${hint}</small></div><b id="${id}v">${val}%</b><div style="flex-basis:100%;position:relative"><input type="range" id="${id}" min="${mn}" max="${mx}" step="1" value="${val}"><i class="std" style="left:calc(${pos}% + ${(7-pos*.14).toFixed(1)}px)"></i></div><div class="lim"><span>${mn}%</span><button data-rs="${key}" data-id="${id}">▲ Standar ${df}% · atur ulang</button><span>${mx}%</span></div></div>`;
+}
+function bindS(id,key){
+ const e=$('#'+id),t=$('#'+id+'v');
+ e.oninput=()=>{t.textContent=e.value+'%'};
+ e.onchange=()=>{cf()[key]=+e.value;save()};
+ $('[data-rs="'+key+'"]').onclick=()=>{const d=LIM[key][2];e.value=d;t.textContent=d+'%';cf()[key]=d;save()};
 }
 function sw(id,on){return`<label class="sw"><input type="checkbox" id="${id}" ${on?'checked':''}><i></i></label>`}
 function vSetting(){
@@ -370,10 +474,16 @@ function vSetting(){
   <div class="row c"><div class="g">Sudah absen<small>Saat wajah cocok tapi sudah tercatat hadir</small></div>${sw('eD',n.dup)}<input id="tD" value="${esc(n.tDup)}"></div>
   <div class="row c"><div class="g">Wajah tidak dikenali<small>Saat scan gagal</small></div>${sw('eG',n.gagal)}<input id="tG" value="${esc(n.tGagal)}"></div>
  </div><p class="sm">Isi kalimat bisa diubah. Pakai {nama} untuk nama siswa dan {kelas} untuk kelasnya.</p>
+ <h3>Scan</h3><div class="card">
+  <div class="row"><div class="g">Deteksi wajah<small>Scan hanya jalan kalau ada wajah di dalam cincin</small></div>${sw('dtc',c.detect)}</div>
+  <div class="row"><div class="g">Scan otomatis<small>Kamera scan terus tanpa tombol (cocok untuk gerbang)</small></div>${sw('aut',c.auto)}</div>
+  ${rng('cool','Jeda setelah berhasil',1,10,1,c.cool,'s')}
+ </div><p class="sm">Jika deteksi wajah sering salah (wajah tidak terbaca), matikan. Deteksi ini hanya memastikan ada wajah, bukan pencegah foto.</p>
  <h3>Pencocokan wajah</h3><div class="card">
-  ${rng('thK','Ambang Mode Kelas',60,95,1,c.thK,'n')}
-  ${rng('thS','Ambang Mode Sekolah',70,98,1,c.thS,'n')}
- </div><p class="sm">Makin tinggi = makin ketat (lebih jarang salah orang, tapi lebih sering "tidak dikenali").</p>
+  ${rngS('thK','Ambang Mode Kelas','thK','Skor minimal agar wajah dianggap cocok')}
+  ${rngS('thS','Ambang Mode Sekolah','thS','Skor minimal agar wajah dianggap cocok')}
+  ${rngS('gap','Selisih dengan kandidat kedua','gap','Wajah ditolak kalau terlalu mirip siswa lain. 0 = tidak dicek')}
+ </div><p class="sm">Garis kecil di slider = nilai standar. Makin tinggi ambang = makin ketat (lebih jarang salah orang, tapi lebih sering "tidak dikenali"). Kalau sering gagal padahal orangnya benar, turunkan sedikit demi sedikit (2–3%) lalu uji.</p>
  <h3>Data</h3><div class="card" style="padding:12px">
   <button class="btn s" id="bk1" style="margin-bottom:8px">Unduh cadangan (.json)</button>
   <button class="btn s" id="rs" style="margin-bottom:8px">Pulihkan dari file cadangan</button>
@@ -394,7 +504,10 @@ function vSetting(){
  $('#tH').oninput=e=>{n.tHadir=e.target.value;save()};
  $('#tD').oninput=e=>{n.tDup=e.target.value;save()};
  $('#tG').oninput=e=>{n.tGagal=e.target.value;save()};
- bindR('thK','n',x=>c.thK=x);bindR('thS','n',x=>c.thS=x);
+ $('#dtc').onchange=e=>{c.detect=e.target.checked;save()};
+ $('#aut').onchange=e=>{c.auto=e.target.checked;save()};
+ bindR('cool','s',x=>c.cool=x);
+ bindS('thK','thK');bindS('thS','thS');bindS('gap','gap');
  $('#bk1').onclick=()=>{try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(DB)],{type:'application/json'}));a.download='cadangan-absen-'+today()+'.json';a.click()}catch(e){toast('Unduh tidak tersedia di perangkat ini')}};
  $('#rs').onclick=()=>$('#rf').click();
  $('#rf').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
